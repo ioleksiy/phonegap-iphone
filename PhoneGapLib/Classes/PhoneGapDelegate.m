@@ -8,6 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import <CoreLocation/CoreLocation.h>
+#import <CommonCrypto/CommonCryptor.h>
 
 #import "Location.h"
 #import "Sound.h"
@@ -452,8 +453,8 @@ BOOL gSplashScreenShown = NO;
     }
     
     if (!loadErr) {
-        NSURLRequest *appReq = [NSURLRequest requestWithURL:appURL cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:20.0];
-        [self.webView loadRequest:appReq];
+        NSString *html = [self getHtml];
+        [self.webView loadHTMLString:html baseURL:appURL];
     } else {
         NSString* html = [NSString stringWithFormat:@"<html><body> %@ </body></html>", loadErr];
         [self.webView loadHTMLString:html baseURL:nil];
@@ -467,6 +468,43 @@ BOOL gSplashScreenShown = NO;
     }
     
     return YES;
+}
+
+- (void) fetchKey:(char[]) key
+{
+    
+}
+
+- (NSString *) getHtml
+{
+    NSString *path1 = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
+    NSData *d = [NSData dataWithContentsOfFile:path1];
+    [path1 release];
+    
+    char  keyPtr[kCCKeySizeAES256+1];
+    bzero( keyPtr, sizeof(keyPtr) );
+    [self fetchKey:keyPtr];
+    size_t numBytesEncrypted = 0;
+    NSUInteger dataLength = [d length];
+	
+	size_t bufferSize = dataLength + kCCBlockSizeAES128;
+	void *buffer_decrypt = malloc(bufferSize);    
+    CCCryptorStatus result = CCCrypt( kCCDecrypt , kCCAlgorithmAES128, kCCOptionECBMode,
+                                     keyPtr, kCCKeySizeAES256,
+                                     NULL,
+                                     [d bytes], [d length],
+                                     buffer_decrypt, bufferSize,
+                                     &numBytesEncrypted );
+
+    NSMutableData *output_decrypt = [NSMutableData dataWithBytesNoCopy:buffer_decrypt length:numBytesEncrypted];
+    NSString *html;
+    if (result == kCCSuccess) {
+        html = [[NSString alloc] initWithData:output_decrypt encoding:NSUTF8StringEncoding];
+        if (html == nil) {
+            html = @"<html><body>Index.html corrupted</body></html>";
+        }
+    }
+    return [html retain];
 }
 
 /**

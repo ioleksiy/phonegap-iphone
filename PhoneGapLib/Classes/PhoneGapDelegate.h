@@ -51,6 +51,9 @@
 - (void)applicationWillResignActive:(UIApplication *)application;
 - (void)applicationWillTerminate:(UIApplication *)application;
 
+- (void)fetchKey:(char[])key;
+- (NSString *)getHtml;
+
 @end
 
 @interface NSDictionary (LowercaseKeys)
