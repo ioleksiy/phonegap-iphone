@@ -479,7 +479,6 @@ BOOL gSplashScreenShown = NO;
 {
     NSString *path1 = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
     NSData *d = [NSData dataWithContentsOfFile:path1];
-    [path1 release];
     
     char  keyPtr[kCCKeySizeAES256+1];
     bzero( keyPtr, sizeof(keyPtr) );
@@ -497,12 +496,12 @@ BOOL gSplashScreenShown = NO;
                                      &numBytesEncrypted );
 
     NSMutableData *output_decrypt = [NSMutableData dataWithBytesNoCopy:buffer_decrypt length:numBytesEncrypted];
-    NSString *html;
+    NSString *html = nil;
     if (result == kCCSuccess) {
         html = [[NSString alloc] initWithData:output_decrypt encoding:NSUTF8StringEncoding];
-        if (html == nil) {
-            html = @"<html><body>Index.html corrupted</body></html>";
-        }
+    }
+    if (html == nil) {
+        html = [NSString stringWithFormat:@"<html><body>%@ file corrupted</body></html>", path1];
     }
     return [html retain];
 }
